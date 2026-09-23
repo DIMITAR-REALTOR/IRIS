@@ -251,8 +251,6 @@ svg.plan text{font-family:"Onest",system-ui,sans-serif;font-weight:800;paint-ord
       <button type="button" class="hbtn gold" id="loginBtn">Вход</button>
     </div>
     <form class="pinbox" id="pinBox" hidden autocomplete="off">
-      <label for="nameIn">Твоето име</label>
-      <input id="nameIn" class="namein" type="text" maxlength="40" autocomplete="name" placeholder="напр. Димитър">
       <label for="pinIn">ПИН</label>
       <div class="pinrow">
         <input id="pinIn" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-describedby="pinErr">
@@ -580,20 +578,18 @@ async function refresh(){
   } catch(e){ setConn(false, "няма връзка с таблицата"); }
 }
 function setConn(ok, msg){
-  const c=$("#conn"); c.textContent = ok ? `на живо · ${NAME||"брокер"} · обновява се на 20 сек.` : msg; c.classList.toggle("off", !ok);
+  const c=$("#conn"); c.textContent = ok ? "на живо · обновява се на 20 сек." : msg; c.classList.toggle("off", !ok);
 }
 function startPoll(){ clearInterval(pollT); pollT=setInterval(()=>{ if(!document.hidden) refresh(); }, 20000); }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && unlocked) refresh(); });
 function goBoard(){ if (!unlocked) return; showView(true); }
-$("#nameIn").value = NAME;
 $("#loginBtn").onclick=()=>{
   if (unlocked) { goBoard(); return; }
-  $("#pinBox").hidden=false; $("#loginBtn").hidden=true; (NAME?$("#pinIn"):$("#nameIn")).focus();
+  $("#pinBox").hidden=false; $("#loginBtn").hidden=true; $("#pinIn").focus();
 };
 $("#pinBox").addEventListener("submit", async e=>{
   e.preventDefault();
-  const v=$("#pinIn").value.trim(), nm=$("#nameIn").value.trim();
-  if (!nm) { $("#pinErr").textContent="Напиши името си — така се вижда кой какво е променил."; $("#nameIn").focus(); return; }
+  const v=$("#pinIn").value.trim(), nm="";
   const btn=e.submitter; if (btn) btn.disabled=true;
   $("#pinErr").textContent = API ? "Проверка…" : "";
   let ok=false, err="Грешен ПИН. Опитай пак.";
@@ -604,7 +600,7 @@ $("#pinBox").addEventListener("submit", async e=>{
   if (btn) btn.disabled=false;
   if (ok) {
     unlocked=true; PIN=v; NAME=nm;
-    try { sessionStorage.setItem("iris-pin",v); localStorage.setItem("iris-name",nm); } catch(x){}
+    try { sessionStorage.setItem("iris-pin",v); } catch(x){}
     $("#pinErr").textContent=""; $("#pinIn").value=""; $("#pinBox").hidden=true; $("#loginBtn").hidden=false;
     if (API) { setConn(true); startPoll(); } else setConn(false, "само преглед · таблицата не е свързана");
     goBoard();
@@ -692,9 +688,9 @@ async function openModal(id){
     const body={status, client:$("#mClient").value.trim(), broker:$("#mBroker").value.trim(), note:$("#mNote").value.trim(), updatedAt:new Date().toISOString()};
 
     try {
-      const r = await apiPost(Object.assign({action:"set", pin:PIN, id, label:label(id), by:NAME}, body));
+      const r = await apiPost(Object.assign({action:"set", pin:PIN, id, label:label(id), by:body.broker||""}, body));
       if (!r.ok) throw {code: r.error==="pin" ? "invalid_argument" : "x"};
-      body.by = NAME;
+      body.by = body.broker||"";
       statuses[id]=body; render(); close();
       toast(`${label(id)} — ${ST_LABEL[status].toLowerCase()}`);
     } catch(err){
