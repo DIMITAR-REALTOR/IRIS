@@ -560,9 +560,18 @@ let PIN = "", NAME = "", unlocked = false, pollT = null;
 try { PIN = sessionStorage.getItem("iris-pin")||""; NAME = localStorage.getItem("iris-name")||""; } catch(e){}
 const PIN_H = "ae1b75c681cdf7a167d1f9afb62392ece7ca42f70981befb30f9faa03f0d729c";
 async function sha(s){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-async function apiPost(obj){
-  const r = await fetch(API, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(obj), redirect:"follow"});
-  return r.json();
+let jpN = 0;
+function apiPost(obj){ // JSONP — Google Apps Script не позволява директни заявки от друг сайт
+  return new Promise((resolve, reject)=>{
+    const cb = "__iris" + Date.now() + "_" + (jpN++);
+    const s = document.createElement("script");
+    const done = ()=>{ clearTimeout(t); try { delete window[cb]; } catch(e){ window[cb]=undefined; } s.remove(); };
+    window[cb] = d=>{ done(); resolve(d); };
+    s.onerror = ()=>{ done(); reject(new Error("net")); };
+    const t = setTimeout(()=>{ done(); reject(new Error("timeout")); }, 20000);
+    s.src = API + (API.includes("?") ? "&" : "?") + "cb=" + cb + "&q=" + encodeURIComponent(JSON.stringify(obj));
+    document.head.appendChild(s);
+  });
 }
 function applyRows(rows){
   const next={}; for (const [id,v] of Object.entries(rows||{})) if (byId[id]||parkById[id]) next[id]=v;
