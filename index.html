@@ -203,10 +203,11 @@ svg.plan text{font-family:"Onest",system-ui,sans-serif;font-weight:800;paint-ord
 .hbtn{border:0;border-radius:8px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer}
 .hbtn.gold{background:#B1950E;color:#18202d}.hbtn.gold:hover{background:#C9AA1C}
 .hbtn.ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.55)}.hbtn.ghost:hover{background:rgba(255,255,255,.22)}
-.pinbox{display:grid;gap:6px;max-width:320px;background:rgba(10,12,16,.55);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:12px 14px;backdrop-filter:blur(6px)}
+.pinbox{display:grid;gap:6px;width:100%;max-width:340px;background:rgba(10,12,16,.55);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:12px 14px;backdrop-filter:blur(6px)}
 .pinbox label{font-size:13px;font-weight:700;letter-spacing:.4px}
 .pinrow{display:flex;gap:8px}
-.pinrow input{flex:1;min-width:0;font-size:22px;letter-spacing:6px;text-align:center;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.95);color:#18202d}
+.pinrow .hbtn{flex:none;padding:10px 18px}
+.pinrow input{flex:1;min-width:0;width:100%;font-size:22px;letter-spacing:6px;text-align:center;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.95);color:#18202d}
 .namein{font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.95);color:#18202d}
 .pinerr{min-height:18px;font-size:13px;color:#FFD27A;font-weight:600}
 .hbtn:focus-visible{outline:3px solid #fff;outline-offset:2px}
@@ -247,14 +248,11 @@ svg.plan text{font-family:"Onest",system-ui,sans-serif;font-weight:800;paint-ord
       <div><b>47 + 181</b>гаража и паркоместа</div>
       <div><b id="heroFree">228</b>свободни в момента</div>
     </div>
-    <div class="hbtns">
-      <button type="button" class="hbtn gold" id="loginBtn">Вход</button>
-    </div>
-    <form class="pinbox" id="pinBox" hidden autocomplete="off">
+    <form class="pinbox" id="pinBox" autocomplete="off">
       <label for="pinIn">ПИН</label>
       <div class="pinrow">
         <input id="pinIn" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-describedby="pinErr">
-        <button type="submit" class="hbtn gold">Влез</button>
+        <button type="submit" class="hbtn gold" id="loginBtn">Вход</button>
       </div>
       <div class="pinerr" id="pinErr" aria-live="polite"></div>
     </form>
@@ -583,12 +581,9 @@ function setConn(ok, msg){
 function startPoll(){ clearInterval(pollT); pollT=setInterval(()=>{ if(!document.hidden) refresh(); }, 20000); }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && unlocked) refresh(); });
 function goBoard(){ if (!unlocked) return; showView(true); }
-$("#loginBtn").onclick=()=>{
-  if (unlocked) { goBoard(); return; }
-  $("#pinBox").hidden=false; $("#loginBtn").hidden=true; $("#pinIn").focus();
-};
 $("#pinBox").addEventListener("submit", async e=>{
   e.preventDefault();
+  if (unlocked) { goBoard(); return; }
   const v=$("#pinIn").value.trim(), nm="";
   const btn=e.submitter; if (btn) btn.disabled=true;
   $("#pinErr").textContent = API ? "Проверка…" : "";
@@ -601,7 +596,7 @@ $("#pinBox").addEventListener("submit", async e=>{
   if (ok) {
     unlocked=true; PIN=v; NAME=nm;
     try { sessionStorage.setItem("iris-pin",v); } catch(x){}
-    $("#pinErr").textContent=""; $("#pinIn").value=""; $("#pinBox").hidden=true; $("#loginBtn").hidden=false;
+    $("#pinErr").textContent=""; $("#pinIn").value="";
     if (API) { setConn(true); startPoll(); } else setConn(false, "само преглед · таблицата не е свързана");
     goBoard();
   } else { $("#pinErr").textContent=err; $("#pinIn").select(); }
