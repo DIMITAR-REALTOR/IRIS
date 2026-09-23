@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=Unbounded:wght@600;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --surface-2:#e9edf3; --ink:#18202d; --muted:#5c6678; --line:#d5dbe4;
@@ -275,6 +276,7 @@ svg.plan text{font-family:"Onest",system-ui,sans-serif;font-weight:800;paint-ord
       <button class="btn" id="homeBtn" type="button">← Начало</button>
       <button class="btn primary" id="pdfBtn" type="button">Изтегли PDF</button>
       <button class="btn" id="csvBtn" type="button">Изтегли CSV</button>
+      <button class="btn" id="xlsxBtn" type="button">Изтегли Excel</button>
     </div>
   </header>
 
@@ -740,6 +742,22 @@ $("#pdfBtn").onclick = async ()=>{
     await saveFile(`IRIS_shahmatka_${d}.pdf`, pdf.output("blob"));
   } catch(e){ toast("PDF-ът не се генерира. Опитай пак."); }
   btn.disabled=false; btn.textContent="Изтегли PDF";
+};
+$("#xlsxBtn").onclick = ()=>{
+  if (!window.XLSX) { toast("Excel модулът не се зареди. Презареди страницата."); return; }
+  const H=["Блок","Секция","Обект","Етаж","Тип","Площ м²","Изложение","Цена €","€/м²","Статус","Клиент","Брокер","Бележка"];
+  const A=[H], P=[H];
+  UNITS.forEach(u=>{const c=statuses[u.id]||{}; A.push([+u.b,+u.s,"Ап. "+u.no,u.fl+1,u.rooms+"-стаен",u.m2,EXP[u.exp][0]+" ("+u.expLab+")",u.price,u.ppm2,ST_LABEL[st(u.id)],c.client||"",c.broker||"",c.note||""]);});
+  PARK.forEach(p=>{const c=statuses[p.id]||{}; P.push([p.b==="0"?"двор":+p.b,"",KIND[p.kind]+" "+p.no,p.lvl==="u"?"подземен":p.lvl==="g"?1:"двор","",p.m2,"",p.price,"",ST_LABEL[st(p.id)],c.client||"",c.broker||"",c.note||""]);});
+  const wb=XLSX.utils.book_new();
+  for (const [name,rows] of [["Апартаменти",A],["Гаражи, ПМ, складове",P]]) {
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"]=[6,7,12,6,9,9,22,11,8,11,20,14,28].map(w=>({wch:w}));
+    ws["!autofilter"]={ref:ws["!ref"]};
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  }
+  const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  saveFile(`IRIS_shahmatka_${new Date().toISOString().slice(0,10)}.xlsx`, new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
 };
 $("#csvBtn").onclick = ()=>{
   const rows=[["Блок","Секция","Ап.","Етаж","Тип","Площ м2","Изложение","Цена €","€/м2","Статус","Клиент","Брокер","Бележка"]];
